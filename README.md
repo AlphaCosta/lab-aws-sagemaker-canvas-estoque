@@ -1,47 +1,93 @@
-# 📊 Previsão de Estoque Inteligente na AWS com [SageMaker Canvas](https://aws.amazon.com/pt/sagemaker/canvas/)
+# SageMaker Canvas – Time Series Forecasting (VENDAS_UNIDADES)
 
-Bem-vindo ao desafio de projeto "Previsão de Estoque Inteligente na AWS com SageMaker Canvas. Neste Lab DIO, você aprenderá a usar o SageMaker Canvas para criar previsões de estoque baseadas em Machine Learning (ML). Siga os passos abaixo para completar o desafio!
+## Objetivo
+Construir um modelo de **previsão de séries temporais** no Amazon SageMaker Canvas para prever a demanda diária (**VENDAS_UNIDADES**) por produto (**ID_PRODUTO**) e analisar desempenho e variáveis mais influentes.
 
-## 📋 Pré-requisitos
+---
 
-Antes de começar, certifique-se de ter uma conta na AWS. Se precisar de ajuda para criar sua conta, confira nosso repositório [AWS Cloud Quickstart](https://github.com/digitalinnovationone/aws-cloud-quickstart).
+## Dataset
+Dataset tabular com granularidade diária e múltiplas séries (uma por produto).
 
+**Colunas principais**
+- `DATA_EVENTO` (date): timestamp diário
+- `ID_PRODUTO` (text): identificador do item/série
+- `VENDAS_UNIDADES` (numeric): variável alvo (demanda/vendas)
 
-## 🎯 Objetivos Deste Desafio de Projeto (Lab)
+**Features auxiliares (exemplos)**
+- `PRECO`, `FLAG_PROMOCAO`, `CATEGORIA`, `DIA_SEMANA`, `MES`
+- `ESTOQUE_INICIO_DIA`, `ESTOQUE_FIM_DIA`
+- `LEAD_TIME_DIAS`, `ESTOQUE_SEGURANCA`, `PONTO_REPOSICAO`
 
-![image](https://github.com/digitalinnovationone/lab-aws-sagemaker-canvas-estoque/assets/730492/72f5c21f-5562-491e-aa42-2885a3184650)
+---
 
-- Dê um fork neste projeto e reescreva este `README.md`. Sinta-se à vontade para detalhar todo o processo de criação do seu Modelo de ML para uma "Previsão de Estoque Inteligente".
-- Para isso, siga o [passo a passo] descrito a seguir e evolua as suas habilidades em ML no-code com o Amazon SageMaker Canvas.
-- Ao concluir, envie a URL do seu repositório com a solução na plataforma da DIO.
+## Preparação de Dados (Data Wrangler)
+1. Importação do CSV no Data Wrangler.
+2. Ajuste de tipos:
+   - `DATA_EVENTO` como **date**
+   - `ID_PRODUTO` convertido para **text** (requisito do Canvas para Item ID em time series)
+3. Transformações:
+   - Remoção de colunas derivadas/decisórias para reduzir vazamento e manter apenas variáveis disponíveis no momento da previsão.
 
+---
 
-## 🚀 Passo a Passo
+## Treinamento do Modelo (Canvas)
+Tipo de problema: **Predictive analysis → Time series forecasting**
 
-### 1. Selecionar Dataset
+Configuração:
+- Target: `VENDAS_UNIDADES`
+- Timestamp: `DATA_EVENTO`
+- Item ID: `ID_PRODUTO`
+- Horizonte configurado: **14 dias**
+- Build executado: **Quick build**
 
--   Navegue até a pasta `datasets` deste repositório. Esta pasta contém os datasets que você poderá escolher para treinar e testar seu modelo de ML. Sinta-se à vontade para gerar/enriquecer seus próprios datasets, quanto mais você se engajar, mais relevante esse projeto será em seu portfólio.
--   Escolha o dataset que você usará para treinar seu modelo de previsão de estoque.
--   Faça o upload do dataset no SageMaker Canvas.
+---
 
-### 2. Construir/Treinar
+## Resultados (Quick build)
+Métricas obtidas no Canvas:
+- Avg. wQL: **0.171**
+- MAPE: **0.243** (~24,3%)
+- WAPE: **0.253** (~25,3%)
+- RMSE: **3.817**
+- MASE: **0.723**
 
--   No SageMaker Canvas, importe o dataset que você selecionou.
--   Configure as variáveis de entrada e saída de acordo com os dados.
--   Inicie o treinamento do modelo. Isso pode levar algum tempo, dependendo do tamanho do dataset.
+Interpretação:
+- Erro percentual médio em torno de ~25% (MAPE/WAPE), adequado como primeira versão de forecast de demanda diária.
+- RMSE ~3,8 indica erro típico de aproximadamente 4 unidades na escala do alvo.
+- MASE < 1 sugere desempenho melhor que um baseline simples.
 
-### 3. Analisar
+---
 
--   Após o treinamento, examine as métricas de performance do modelo.
--   Verifique as principais características que influenciam as previsões.
--   Faça ajustes no modelo se necessário e re-treine até obter um desempenho satisfatório.
+## Impacto das variáveis (Column impact)
+Top 5 variáveis mais relevantes:
+1. `ESTOQUE_INICIO_DIA` (14.58%)
+2. `ESTOQUE_FIM_DIA` (12.48%)
+3. `PRECO` (10.19%)
+4. `PONTO_REPOSICAO` (3.16%)
+5. `DIA_SEMANA` (3.12%)
 
-### 4. Prever
+Observação:
+- O modelo se apoia fortemente em sinais de estoque e preço, além do padrão semanal, para prever a demanda.
 
--   Use o modelo treinado para fazer previsões de estoque.
--   Exporte os resultados e analise as previsões geradas.
--   Documente suas conclusões e qualquer insight obtido a partir das previsões.
+---
 
-## 🤔 Dúvidas?
+## Predições (Predict)
+Foi iniciado um job de **Batch prediction**, porém o processo não foi concluído devido ao término dos créditos de treinamento/execução da conta AWS (job com status **Failed**).  
+Apesar disso, o modelo foi treinado com sucesso (Quick build) e as análises de métricas e impacto de variáveis foram realizadas.
 
-Esperamos que esta experiência tenha sido enriquecedora e que você tenha aprendido mais sobre Machine Learning aplicado a problemas reais. Se tiver alguma dúvida, não hesite em abrir uma issue neste repositório ou entrar em contato com a equipe da DIO.
+---
+
+## Evidências (prints)
+
+### 1) Métricas do modelo (Analyze)
+![Métricas do Quick build](Evidencias/Evidencia_1.png)
+
+### 2) Predição (falha por créditos)
+![Predict job failed](Evidencias/Evidencia_2.png)
+
+---
+
+## Próximos passos
+- Executar **Standard build** quando houver créditos disponíveis para melhorar acurácia e estabilidade.
+- Reexecutar **Batch prediction** para gerar forecasts e exportar resultados.
+- Transformar previsão de demanda em recomendação de reposição:
+  **Reposição sugerida = (Demanda prevista no lead time) + (Estoque de segurança)**.
